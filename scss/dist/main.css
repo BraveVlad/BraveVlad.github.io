@@ -1,0 +1,577 @@
+@charset "UTF-8";
+/* RESET FILE */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+}
+
+/*
+    Day Cycle Animation
+
+    This animation represents a full day cycle day to night.
+    This animation is timed according to the global day-cycle time
+    variable, and other animations that depends on day/night time
+    are coupled to this animation's timer.
+
+    For example - Planets orbit according to day cycle, and vikings
+    will go to sleep at night.
+*/
+@keyframes anim-day-cycle {
+  50% {
+    background-color: var(--night-color);
+  }
+  100% {
+    background-color: var(--day-color);
+  }
+}
+/*
+    Planet Orbit Animation. 
+
+    This cool animation CSS'ly mimics the circular euqation : 
+
+    (x – h)2+ (y – k)2 = r2
+
+    It uses pythagorean theorem but without calculations,
+    with the following steps:
+    1. first, we rotate the object towards a timed-coupled degree value.
+    2. Then, after it faces the desired degree, we move the object upwards the amount 
+        of the circle's radius.
+
+    With infinitly changing degree value, the object will always be located on the outer
+    ring of the circle - forcing it to orbit around the object's starting position.
+
+    3. When rotating the objects at the start of the transformation, the planets seem to always
+    face towards the starting position. 
+    It looks like the planets rotate massivly during a 1 night/day span.
+
+    to fix this, we rotate the planets back to their initial rotation degree, 
+    making it to stop looking towards the center of the screen but rather their initial rotation. 
+*/
+@keyframes anim-planet-orbit {
+  0% {
+    transform: rotate(var(--start-degree)) translate(var(--planets-radius)) rotate(calc(0deg - (var(--start-degree))));
+  }
+  25% {
+    opacity: 0.75;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(calc(var(--start-degree) - 360deg)) translate(var(--planets-radius)) rotate(calc(0deg - (var(--start-degree) - 360deg)));
+  }
+}
+/* MAIN SKY FILE */
+/*
+    Day Cycle Time
+
+    This value represents a full day cycle day-to-night and vice versa.
+    This variable controls the global day-cycle based animations accross other
+    objects.
+*/
+:root {
+  --day-cycle-time: 30s;
+}
+
+.sky {
+  --day-color: #E1FAFF;
+  --night-color: #2F5962;
+  background-color: var(--day-color);
+  animation: anim-day-cycle var(--day-cycle-time) infinite ease-in-out;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+.planet {
+  --planets-radius: 90vh;
+  --planet-size: calc(var(--planets-radius) / 2);
+  width: var(--planet-size);
+  height: var(--planet-size);
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  animation: anim-planet-orbit var(--day-cycle-time) infinite linear;
+}
+.planet.sun {
+  background: url("../../assets/sky/sun.svg") no-repeat center top;
+  background-size: contain;
+  --start-degree: -90deg;
+  opacity: 1;
+}
+.planet.moon {
+  background: url("../../assets/sky/moon.svg") no-repeat center top;
+  background-size: contain;
+  --start-degree: 90deg;
+  opacity: 0.25;
+}
+
+/*
+    Waves Tide Animation
+
+    The waves tide animation moves the whole waves block towards 
+    x position + tide range, and then brings the waves block back to
+    it's orignialy position.
+*/
+@keyframes --anim-waves-tide {
+  0% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(var(--wave-tide-range));
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+/* 
+    Floating Object Animation 
+
+    This animation will control any marked floating object under the 'tide-animation-manager'.
+    It rotates the object sideways and moves it up&down the Y axis to represent floatation.
+
+    The intensity of the floating is controlled by the intensity of the tides !
+    The intensity changes are pre-calculated at the initial values set up.
+
+*/
+@keyframes --anim-float {
+  0% {
+    transform: translateY(0) rotate(var(--float-rotation));
+  }
+  50% {
+    transform: translateY(var(--float-y)) rotate(0);
+  }
+  100% {
+    transform: translateY(0) rotate(var(--float-rotation));
+  }
+}
+/*
+    Reversed Floating Object Animation 
+
+    To make the effect that not all floating objects are the same <3 
+
+*/
+@keyframes --anim-float-reverse {
+  0% {
+    transform: translateY(var(--float-y)) rotate(0);
+  }
+  50% {
+    transform: translateY(0) rotate(var(--float-rotation));
+  }
+  100% {
+    transform: translateY(var(--float-y)) rotate(0);
+  }
+}
+/*
+    Boat Sailing System Manager
+
+    This sailing system is based on a grid/radio buttons mechanism that 
+    splits the screen to several available 'sailing' waypoints.
+
+    The boat sailing manager contains a grid that splits the screen to serveral 'waypoints'.
+    Each waypoint has an invisible radio button and a label that covers the whole grid-area the waypoint is attached to.
+    Each waypoint also has a waypoint-flag buoy that shows the current checked radio-button and the direction of the boat.
+
+    When the user selects a waypoint, the boat has a rule to change it's x position based to the specific checked waypoint.
+*/
+.boat-sail-manager {
+  --boat-x-position: 25%;
+}
+
+/*
+    Sail Waypoints Grid
+
+    Splits the screen to several sections and holds waypoints accordingly
+*/
+.sail-waypoints {
+  width: 100vw;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: 1fr;
+  /*
+      Waypoint
+
+      Each waypoint contains a radio button and a label that covers the whole waypoint area.
+      It detects whether one of the waypoints is checked, and start a fading animation on the 
+      defaultly-hidden waypoint flag object to represent the user has pressed this waypoint.
+  */
+}
+.sail-waypoints .waypoint {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+.sail-waypoints .waypoint:has(input:checked) .waypoint-flag {
+  width: 100%;
+  height: 30%;
+  position: absolute;
+  right: 0;
+  left: 0;
+  bottom: var(--sea-level);
+  margin: 0 auto;
+  background: url("../../assets/boat/waypoint.svg") no-repeat center center;
+  background-size: contain;
+  animation: --anim-waypoint-flag 1s;
+  opacity: 0;
+}
+.sail-waypoints .waypoint label {
+  display: block;
+  height: 100%;
+  width: 100%;
+}
+.sail-waypoints .waypoint input {
+  display: none;
+}
+
+/*
+    Waypoint flag disappear animation
+*/
+@keyframes --anim-waypoint-flag {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+/* BOAT FILE */
+/*
+    Viking Boat 
+
+    The Viking boat, a pivotal maritime innovation of the Viking Age (8th to 11th century), 
+    revolutionized trade, exploration, and warfare across medieval Northern Europe. 
+
+    Its sleek, flexible design, exemplified by iconic longships, empowered Vikings 
+    to navigate rivers, seas, and oceans, shaping their legacy as 
+    formidable seafarers and cultural influencers.
+
+    ---
+
+    Vlad's CSS Viking Boat
+
+    The Viking boat is a floating element with two main abilities:
+    • Boat Slots System -
+        It contains a grid that represents objects storage - 
+        slots which can modularly store different kind of objects in an orderly manner.
+        The boat is divided to several equal sections which orders and positions objects
+        along the width of the boat.
+        In our exmaple, we hold 3 vikings and 2 barrel objects.
+        Any excess objects will be places underneath the boat, hidden deep inside the sea.
+
+    • Sailing Waypoints System - 
+        For extended explanation on the Sailing system, please reade comments in the 
+        import 'waypoints' file.
+        The rules located in the viking boat file are seperated to be able to control
+        boat's x position according to the current selected radio button.
+
+        When the user presses a waypoint, the viking boat detects which waypoints is
+        currently checked, and changes it's X position accordingly.
+        using a translate property on 'left' property, we're able to simply animate
+        the sailing of the viking boat towards the desired position.
+*/
+.vikings-boat {
+  width: 90vh;
+  height: 60vh;
+  position: absolute;
+  bottom: var(--sea-level);
+  left: var(--boat-x-position);
+  right: 0;
+  transition: left 3s ease-in-out;
+  /*
+      Boat Storage Grid Slots 
+
+      Creates a grid of X slots with an equal width, height is determined 
+      by stored child's height.
+
+      Any excess object will be pushed to a new column and will be hidden
+      due to columnd auto flow.
+
+      Detects whether any of the waypoints (children of sail-waypoint object)
+      is checked, changes the x position using 'left' property and iterpolates
+      the change using 'transition' property.
+
+      Currently the waypoint's x positions are hardcoded due to the inability 
+      to effect the custom property directly from 'sail-waypoint'
+  !!! TODO - Fix carved to the stone values using CSS only! 
+
+  */
+}
+.vikings-boat .boat-slots {
+  width: 100%;
+  position: absolute;
+  bottom: calc(var(--viking-size) / 3);
+  left: 0;
+  display: grid;
+  grid-template-columns: repeat(5, var(--viking-size));
+  grid-template-rows: var(--viking-size);
+  grid-auto-flow: column;
+  overflow: hidden;
+}
+.vikings-boat:has(+ .sail-waypoints #waypoint-1:checked) {
+  --boat-x-position: 0%;
+}
+.vikings-boat:has(+ .sail-waypoints #waypoint-2:checked) {
+  --boat-x-position: 15%;
+}
+.vikings-boat:has(+ .sail-waypoints #waypoint-3:checked) {
+  --boat-x-position: 35%;
+}
+.vikings-boat:has(+ .sail-waypoints #waypoint-4:checked) {
+  --boat-x-position: 55%;
+}
+
+/*
+    Boat
+
+    The boat is only here for the visuals, 
+    drawn with 'relative' after every other element of the viking boat is drawn :)
+*/
+.boat {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background: url("../../assets/boat/boat.svg") no-repeat center bottom;
+  background-size: contain;
+}
+
+/* Swimming Viking Animation File */
+/*
+    Swimming Viking Scene-
+
+    The swimming viking is a special usecase animation scene due to the need
+    of controlling several seperate objects at once.
+    Had to seperate this specific animation to draw the shockwave behind
+    the parent Viking and make everything float and timed together.
+*/
+.swimming-viking {
+  width: calc(var(--viking-size) * 1.25);
+  height: calc(var(--viking-size) * 1.25);
+  position: absolute;
+  bottom: calc(var(--sea-level));
+  left: 10%;
+}
+.swimming-viking .viking.swimming {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  background: url("../../assets/viking/swim/viking-swim.svg") no-repeat center bottom;
+  background-size: contain;
+}
+.swimming-viking .viking.swimming .hitbox:hover {
+  cursor: url("../../assets/cursors/cursor-medusa.svg"), auto;
+}
+.swimming-viking .viking.swimming:has(.hitbox:checked) {
+  animation: --anim-shock 2s 2 step-end;
+  background-image: url("../../assets/viking/swim/viking-swim-burnt.svg");
+}
+.swimming-viking .viking.swimming:has(.hitbox:checked) .hitbox:hover {
+  cursor: url("../../assets/cursors/cursor-beer.svg"), auto;
+}
+.swimming-viking:has(.hitbox:checked) .shockwave {
+  width: 200%;
+  height: 200%;
+  position: relative;
+  bottom: 50%;
+  right: 55%;
+  background-image: none;
+  animation: --anim-shockwave 1s 4 step-end;
+}
+
+/*
+    Viking Shock Animation
+    Swaps the viking asset between shocked and 'bones' images to represent electrification.
+    Notice that after the animation ends, it'll not return to the original default asset 
+    but to an event-end asset that represents this shock animation is done.
+*/
+@keyframes --anim-shock {
+  0%, 50%, 100% {
+    background-image: url("../../assets/viking/swim/viking-swim-shocked-bones.svg");
+  }
+  25%, 75% {
+    background-image: url("../../assets/viking/swim/viking-swim-shocked.svg");
+  }
+}
+/*
+    Shockwave Animation
+    Slightly rotates the shockwave left and right using stepped animation.
+    It set the shockwave image only at the start of the animation, so the shockwave
+    can return to a 'none' image when the animation is done. 
+*/
+@keyframes --anim-shockwave {
+  0% {
+    background: url("../../assets/viking/swim/shockwave.svg") no-repeat center center;
+    background-size: contain;
+    transform: rotate(5deg);
+  }
+  50% {
+    transform: rotate(-5deg);
+  }
+  100% {
+    transform: rotate(5deg);
+  }
+}
+/* Main Viking File */
+/*
+    Vikings Manager -
+    Overall usage is to scope a shared viking object size.
+    Also used to mark an element that may contain viking objects,
+    for further global control options
+*/
+.vikings-manager {
+  --viking-size: 18vh;
+}
+
+/*
+    Ordinary Viking -
+    Just a template design for default vikings.
+*/
+.viking {
+  width: var(--viking-size);
+  height: var(--viking-size);
+  background: url("../../assets/viking/viking.svg") no-repeat center bottom;
+  background-size: contain;
+}
+.viking .hitbox {
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+}
+
+/*
+    Viking Boat Placeable objects 
+
+    Here lies vikings and objects that are placeable inside the viking boat.
+    Those objects appear as sailing on the viking boat, and placed according
+    to HTML order using a grid '.boat-slots' representing available space and
+    positions on the boat.
+
+*/
+/*  
+    Sailing Vikings -
+    Main viking actions animation, based on the global day-cycle timer.
+    Vikings will fall asleep at night, and possibly do more interesting
+    actions along the day. 
+*/
+.viking.sailing {
+  animation: --anim-viking-actions var(--day-cycle-time) infinite step-end;
+}
+
+/* 
+    Sailing Barrels -
+    Simple barrels object to showcase the ability of placing other simple
+    objects on the viking boat, according to the grid '.boat-slots' system.
+    Those barrels will float according to boat's float animation and do
+    nothing interesting at all.
+*/
+.barrels {
+  width: var(--viking-size);
+  height: var(--viking-size);
+  background: url("../../assets/boat/barrels.svg") no-repeat center bottom;
+  background-size: contain;
+}
+
+@keyframes --anim-viking-actions {
+  25% {
+    background-image: url("../../assets/viking/viking-sleep.svg");
+  }
+  75% {
+    background-image: url("../../assets/viking/viking.svg");
+  }
+}
+/* SEA FILE */
+/*
+    Tide Animation Manager
+
+    Holds key values and calculations for sea tide & intensity.
+    Also calculates and controls objects marked as floating above sea level.
+*/
+.tide-animation-manager {
+  /* Single Wave */
+  --wave-single-width: 121px;
+  --wave-single-width-unitless: 121;
+  --wave-single-width-half: calc( var(--wave-single-width) / 2);
+  /* Sea waves control - use to control sea objects as well. */
+  --wave-tide-range: var(--wave-single-width);
+  --wave-tide-range-negative: calc( 0px - var(--wave-tide-range));
+  --wave-tide-range-half: calc(var(--wave-tide-range) / 2 );
+  --wave-tide-range-half-negative: calc( 0px - var(--wave-tide-range-half));
+  /* Overall sea dimensions */
+  --waves-width: calc( ((100vw / var(--wave-single-width-unitless)) * var(--wave-single-width-unitless)) + (var(--wave-tide-range) * 2) );
+  --waves-height: 25%;
+  --sea-level: calc( var(--waves-height) - 7.5% );
+  /* Wave tide intensity and timer */
+  --wave-tide-intensity-offset: 0.7;
+  --wave-tide-intensity: calc(1 - var(--wave-tide-intensity-offset));
+  --wave-tide-time: 20s;
+  --wave-tide-anim-time: calc( var(--wave-tide-time) * var(--wave-tide-intensity) );
+  /* Selects objects marked as floating inside tide manager object */
+}
+.tide-animation-manager .float {
+  /* Floating objects control*/
+  /* float rotation*/
+  --float-rotation-offset: 2.5deg;
+  --float-rotation: calc( var(--float-rotation-offset) * var(--wave-tide-intensity-offset));
+  --float-rotation-negative: calc( 0deg - var(--float-rotation) );
+  /* float y axis*/
+  --float-y: calc( var(--wave-tide-range-half) / 5) ;
+  animation: --anim-float var(--wave-tide-anim-time) infinite ease;
+}
+.tide-animation-manager .float--reverse {
+  animation: --anim-float-reverse var(--wave-tide-anim-time) infinite ease;
+}
+
+.sea {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+.waves {
+  width: var(--waves-width);
+  height: var(--waves-height);
+  position: absolute;
+  bottom: 0;
+  left: var(--wave-tide-range-negative);
+  animation: --anim-waves-tide var(--wave-tide-anim-time) infinite ease;
+}
+.waves.front {
+  background: url("../../assets/sea/wave-front.svg") repeat-x 0 4px;
+  background-size: contain;
+}
+.waves.back {
+  left: calc(var(--wave-tide-range-negative) - var(--wave-single-width-half));
+  background: url("../../assets/sea/wave-back.svg") repeat-x 0 4px;
+  background-size: contain;
+}
+
+/* MAIN FILE */
+.screen {
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+* {
+  cursor: url("../../assets/cursors/cursor-point.svg"), auto;
+}
+
+*:active {
+  cursor: url("../../assets/cursors/cursor-point-pressed.svg"), auto;
+}/*# sourceMappingURL=main.css.map */
